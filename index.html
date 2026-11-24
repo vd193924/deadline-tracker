@@ -1,1062 +1,457 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - Quản Lý Deadline Cá Nhân</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Tùy chỉnh thanh trượt tiến độ */
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 18px;
-            width: 18px;
-            border-radius: 50%;
-            background: #4f46e5;
-            cursor: pointer;
-            margin-top: -6px;
-            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
-            transition: transform 0.15s ease;
-        }
-        input[type=range]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 6px;
-            cursor: pointer;
-            border-radius: 999px;
-        }
-        .dark input[type=range]::-webkit-slider-thumb {
-            background: #818cf8;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        .dark ::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow - Theo Dõi Deadline (Chung & Riêng)</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --text: #182032;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --chip-bg: #eef2ff;
+      --chip-text: #3730a3;
+    }
+
+    body.dark {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --chip-bg: #1e3a8a;
+      --chip-text: #dbeafe;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 2px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, select, input {
+      font-family: inherit;
+      font-size: 0.92rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      background: var(--card);
+      color: var(--text);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s ease;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    button.danger {
+      background: transparent;
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .field input, .field select {
+      width: 100%;
+    }
+
+    .deadline-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .item {
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--success);
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .item.soon { border-left-color: var(--warning); }
+    .item.overdue { border-left-color: var(--danger); }
+
+    .item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.76rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--chip-bg);
+      color: var(--chip-text);
+      font-weight: 600;
+    }
+
+    .meta {
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .progress-row input[type="range"] {
+      flex: 1;
+      min-width: 140px;
+      padding: 0;
+      border: none;
+      background: transparent;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .note {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
-
-    <!-- Navbar / Header -->
-    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-            <!-- Logo -->
-            <div class="flex items-center gap-2.5">
-                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-sm shadow-indigo-500/30">
-                    <i data-lucide="clock" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-white leading-none">TaskFlow</h1>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block mt-0.5">Kiểm soát tiến độ & Thời hạn</p>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-2 sm:gap-3">
-                <!-- Export / Import JSON -->
-                <div class="relative group">
-                    <button id="dataMenuBtn" title="Sao lưu & Khôi phục dữ liệu" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1.5 text-sm font-medium">
-                        <i data-lucide="database" class="w-4 h-4"></i>
-                        <span class="hidden md:inline">Dữ liệu</span>
-                    </button>
-                    <!-- Dropdown menu -->
-                    <div id="dataDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-1.5 z-50">
-                        <button onclick="exportData()" class="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                            <i data-lucide="download" class="w-4 h-4 text-indigo-500"></i> Xuất file JSON
-                        </button>
-                        <label class="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <i data-lucide="upload" class="w-4 h-4 text-emerald-500"></i> Nhập file JSON
-                            <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
-                        </label>
-                        <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
-                        <button onclick="resetSampleData()" class="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Khôi phục dữ liệu mẫu
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Dark Mode Toggle -->
-                <button id="themeToggle" title="Chuyển đổi giao diện Sáng/Tối" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
-                    <i data-lucide="moon" id="moonIcon" class="w-4 h-4 hidden dark:block"></i>
-                    <i data-lucide="sun" id="sunIcon" class="w-4 h-4 block dark:hidden"></i>
-                </button>
-
-                <!-- Add Deadline Button -->
-                <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white px-3.5 sm:px-4 py-2.5 rounded-xl font-medium text-sm shadow-sm shadow-indigo-500/25 transition-all flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>Thêm Deadline</span>
-                </button>
-            </div>
-        </div>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>TaskFlow - Theo Dõi Deadline</h1>
+        <div class="subtitle">Dữ liệu <b>Riêng</b> lưu trên máy cá nhân • Dữ liệu <b>Chung</b> xuất/nhập file .json để chia sẻ nhóm</div>
+      </div>
+      <div class="toolbar">
+        <button id="exportSharedBtn">Xuất Chung (.json)</button>
+        <button id="importSharedBtn">Nhập Chung (.json)</button>
+        <input type="file" id="importSharedFile" accept="application/json" hidden />
+        <button id="themeBtn">Sáng / Tối</button>
+      </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-
-        <!-- Dashboard Stats -->
-        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <!-- Stat 1: Đang thực hiện -->
-            <div class="bg-white dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
-                <div>
-                    <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Đang thực hiện</p>
-                    <p id="statActive" class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">0</p>
-                </div>
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <i data-lucide="loader" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </div>
-            </div>
-
-            <!-- Stat 2: Sắp hết hạn (< 48h) -->
-            <div class="bg-white dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
-                <div>
-                    <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Sắp hết hạn (≤48h)</p>
-                    <p id="statUrgent" class="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">0</p>
-                </div>
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                    <i data-lucide="alert-triangle" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </div>
-            </div>
-
-            <!-- Stat 3: Đã quá hạn -->
-            <div class="bg-white dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
-                <div>
-                    <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Đã quá hạn</p>
-                    <p id="statOverdue" class="text-2xl sm:text-3xl font-bold text-rose-600 dark:text-rose-400 mt-1">0</p>
-                </div>
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                    <i data-lucide="alert-circle" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </div>
-            </div>
-
-            <!-- Stat 4: Tỷ lệ hoàn thành -->
-            <div class="bg-white dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
-                <div>
-                    <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Hoàn thành chung</p>
-                    <div class="flex items-baseline gap-2 mt-1">
-                        <p id="statCompletion" class="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">0%</p>
-                        <span id="statCompletedCount" class="text-xs text-slate-400">(0/0)</span>
-                    </div>
-                </div>
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </div>
-            </div>
-        </section>
-
-        <!-- Filter, Search & Sort Controls -->
-        <section class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm space-y-4">
-            <!-- Status Tabs -->
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="statusTabs">
-                <button data-status="all" class="status-tab active px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-indigo-600 text-white">
-                    Tất cả
-                </button>
-                <button data-status="active" class="status-tab px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Đang thực hiện
-                </button>
-                <button data-status="urgent" class="status-tab px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Sắp hết hạn
-                </button>
-                <button data-status="overdue" class="status-tab px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Đã quá hạn
-                </button>
-                <button data-status="completed" class="status-tab px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Hoàn thành
-                </button>
-            </div>
-
-            <!-- Search, Priority Filter, Sort -->
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2 border-t border-slate-100 dark:border-slate-700/70">
-                <!-- Search Input -->
-                <div class="sm:col-span-5 relative">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" id="searchInput" placeholder="Tìm kiếm tên công việc, danh mục..." 
-                        class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                </div>
-
-                <!-- Priority Filter -->
-                <div class="sm:col-span-3">
-                    <select id="priorityFilter" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="all">Mức ưu tiên: Tất cả</option>
-                        <option value="high">Ưu tiên: Cao</option>
-                        <option value="medium">Ưu tiên: Trung bình</option>
-                        <option value="low">Ưu tiên: Thấp</option>
-                    </select>
-                </div>
-
-                <!-- Sort By -->
-                <div class="sm:col-span-4">
-                    <select id="sortBy" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="dueDateAsc">Sắp xếp: Hạn chót gần nhất</option>
-                        <option value="dueDateDesc">Sắp xếp: Hạn chót xa nhất</option>
-                        <option value="priorityDesc">Sắp xếp: Ưu tiên cao nhất</option>
-                        <option value="progressAsc">Sắp xếp: Tiến độ thấp nhất</option>
-                    </select>
-                </div>
-            </div>
-        </section>
-
-        <!-- Deadlines Grid -->
-        <section id="deadlinesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            <!-- Cards will be dynamically injected here -->
-        </section>
-
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden text-center py-16 px-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
-            <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="calendar-check" class="w-8 h-8"></i>
-            </div>
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Không tìm thấy deadline nào</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 mb-5">
-                Hiện không có công việc nào khớp với bộ lọc hiện tại hoặc danh sách của bạn đang trống.
-            </p>
-            <button onclick="openModal()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
-                <i data-lucide="plus" class="w-4 h-4"></i> Tạo deadline mới
-            </button>
+    <div class="card">
+      <form id="deadlineForm" class="form-grid">
+        <div class="field">
+          <label for="titleInput">Tên deadline *</label>
+          <input id="titleInput" type="text" required placeholder="Ví dụ: Nộp báo cáo tuần" />
         </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-slate-200 dark:border-slate-800 py-5 text-center text-xs text-slate-500 dark:text-slate-400">
-        Dữ liệu được lưu tự động trên trình duyệt của bạn (LocalStorage).
-    </footer>
-
-    <!-- Modal: Add / Edit Deadline -->
-    <div id="deadlineModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all">
-            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <h2 id="modalTitle" class="text-lg font-bold text-slate-900 dark:text-white">Thêm Deadline Mới</h2>
-                <button onclick="closeModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <form id="deadlineForm" class="p-6 space-y-4">
-                <input type="hidden" id="taskId">
-                
-                <!-- Title -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên công việc <span class="text-rose-500">*</span></label>
-                    <input type="text" id="taskTitle" required placeholder="VD: Nộp báo cáo đồ án tốt nghiệp" 
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <!-- Description -->
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mô tả ngắn</label>
-                    <textarea id="taskDesc" rows="2" placeholder="Ghi chú chi tiết, link tài liệu hoặc các đầu việc nhỏ..." 
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                </div>
-
-                <!-- Due Date & Priority -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hạn chót (Ngày & Giờ) <span class="text-rose-500">*</span></label>
-                        <input type="datetime-local" id="taskDueDate" required 
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Mức độ ưu tiên</label>
-                        <select id="taskPriority" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="high">🔴 Cao (Gấp / Quan trọng)</option>
-                            <option value="medium" selected>🟡 Trung bình</option>
-                            <option value="low">🟢 Thấp</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Category & Initial Progress -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Danh mục / Nhãn</label>
-                        <input type="text" id="taskCategory" list="categorySuggestions" placeholder="VD: Học tập, Công việc..." 
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <datalist id="categorySuggestions">
-                            <option value="Công việc">
-                            <option value="Học tập">
-                            <option value="Cá nhân">
-                            <option value="Dự án">
-                            <option value="Tài chính">
-                        </datalist>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Tiến độ ban đầu: <span id="modalProgressLabel" class="font-bold text-indigo-600 dark:text-indigo-400">0%</span>
-                        </label>
-                        <div class="pt-2">
-                            <input type="range" id="taskProgress" min="0" max="100" step="5" value="0" 
-                                oninput="document.getElementById('modalProgressLabel').innerText = this.value + '%'"
-                                class="w-full bg-slate-200 dark:bg-slate-700 rounded-lg">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
-                <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-2.5">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                        Hủy bỏ
-                    </button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-500/25 transition-colors">
-                        Lưu Deadline
-                    </button>
-                </div>
-            </form>
+        <div class="field">
+          <label for="dueInput">Hạn chót *</label>
+          <input id="dueInput" type="datetime-local" required />
         </div>
+        <div class="field">
+          <label for="scopeSelect">Phạm vi lưu trữ</label>
+          <select id="scopeSelect">
+            <option value="personal">Riêng của tôi (máy này)</option>
+            <option value="shared">Chung cả nhóm (xuất/nhập .json)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="prioritySelect">Mức ưu tiên</label>
+          <select id="prioritySelect">
+            <option value="Cao">Cao</option>
+            <option value="Trung bình" selected>Trung bình</option>
+            <option value="Thấp">Thấp</option>
+          </select>
+        </div>
+        <div class="field">
+          <button type="submit" class="primary" style="width: 100%;">+ Thêm deadline</button>
+        </div>
+      </form>
+      <div class="note">Mẹo: Khi cập nhật danh sách <b>Chung</b>, hãy bấm <b>Xuất Chung (.json)</b> và gửi file cho các thành viên bấm <b>Nhập Chung (.json)</b>. Danh sách <b>Riêng</b> của mỗi người sẽ không bị ghi đè.</div>
     </div>
 
-    <!-- Modal: Custom Delete Confirmation -->
-    <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 text-center">
-            <div class="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="trash-2" class="w-6 h-6"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Xóa deadline này?</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-                Bạn có chắc muốn xóa <span id="deleteTaskName" class="font-semibold text-slate-700 dark:text-slate-200"></span>? Hành động này không thể hoàn tác.
-            </p>
-            <div class="mt-6 flex items-center justify-center gap-3">
-                <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    Giữ lại
-                </button>
-                <button id="confirmDeleteBtn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white shadow-sm shadow-rose-500/25 transition-colors">
-                    Xóa ngay
-                </button>
-            </div>
-        </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="all">Tất cả</button>
+      <button class="tab" data-tab="shared">Danh sách Chung</button>
+      <button class="tab" data-tab="personal">Danh sách Riêng</button>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <script>
-        // ==================== STATE MANAGEMENT ====================
-        const STORAGE_KEY = 'taskflow_deadlines_v1';
-        const THEME_KEY = 'taskflow_theme';
-        
-        let deadlines = [];
-        let currentFilterStatus = 'all';
-        let currentFilterPriority = 'all';
-        let currentSearch = '';
-        let currentSort = 'dueDateAsc';
-        let taskToDeleteId = null;
-
-        // Tạo dữ liệu mẫu thông minh dựa trên thời gian thực của người dùng
-        function getSampleData() {
-            const now = new Date();
-            const addHours = (h) => {
-                const d = new Date(now.getTime() + h * 60 * 60 * 1000);
-                // Format YYYY-MM-DDTHH:mm
-                const tzOffset = d.getTimezoneOffset() * 60000;
-                return new Date(d - tzOffset).toISOString().slice(0, 16);
-            };
-
-            return [
-                {
-                    id: 'sample-1',
-                    title: 'Hoàn thiện Slide thuyết trình Dự án Q4',
-                    description: 'Tổng hợp số liệu doanh thu, biểu đồ tăng trưởng và kế hoạch triển khai tháng tới.',
-                    dueDate: addHours(5), // Sắp hết hạn trong 5 giờ nữa
-                    priority: 'high',
-                    category: 'Công việc',
-                    progress: 80,
-                    createdAt: Date.now() - 86400000
-                },
-                {
-                    id: 'sample-2',
-                    title: 'Nộp bài tập lớn môn Trí tuệ nhân tạo',
-                    description: 'Train mô hình phân loại ảnh và viết báo cáo LaTeX tối thiểu 15 trang.',
-                    dueDate: addHours(32), // Sắp hết hạn (< 48h)
-                    priority: 'high',
-                    category: 'Học tập',
-                    progress: 45,
-                    createdAt: Date.now() - 172800000
-                },
-                {
-                    id: 'sample-3',
-                    title: 'Thanh toán hóa đơn điện, nước & Internet',
-                    description: 'Kiểm tra app ngân hàng và thanh toán trước khi bị cắt dịch vụ.',
-                    dueDate: addHours(-4), // Đã quá hạn 4 tiếng
-                    priority: 'medium',
-                    category: 'Tài chính',
-                    progress: 0,
-                    createdAt: Date.now() - 259200000
-                },
-                {
-                    id: 'sample-4',
-                    title: 'Lên kế hoạch du lịch cuối tuần',
-                    description: 'Đặt phòng homestay, xem dự báo thời tiết và lên danh sách đồ cần mang.',
-                    dueDate: addHours(110), // An toàn (> 4 ngày)
-                    priority: 'low',
-                    category: 'Cá nhân',
-                    progress: 25,
-                    createdAt: Date.now() - 40000000
-                },
-                {
-                    id: 'sample-5',
-                    title: 'Review code cho tính năng Thanh toán',
-                    description: 'Kiểm tra bảo mật API và unit test cho module giỏ hàng.',
-                    dueDate: addHours(-24),
-                    priority: 'high',
-                    category: 'Dự án',
-                    progress: 100, // Đã hoàn thành
-                    createdAt: Date.now() - 300000000
-                }
-            ];
-        }
-
-        // ==================== INITIALIZATION ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            initTheme();
-            loadData();
-            setupEventListeners();
-            renderAll();
-            
-            // Cập nhật đếm ngược mỗi 30 giây
-            setInterval(() => {
-                renderDeadlines();
-                updateStats();
-            }, 30000);
-        });
-
-        function initTheme() {
-            const savedTheme = localStorage.getItem(THEME_KEY);
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-            lucide.createIcons();
-        }
-
-        function loadData() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    deadlines = JSON.parse(raw);
-                } else {
-                    deadlines = getSampleData();
-                    saveData();
-                }
-            } catch (e) {
-                console.error('Lỗi đọc dữ liệu:', e);
-                deadlines = getSampleData();
-            }
-        }
-
-        function saveData() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(deadlines));
-            } catch (e) {
-                showToast('Không thể lưu dữ liệu vào trình duyệt!', 'error');
-            }
-        }
-
-        // ==================== EVENT LISTENERS ====================
-        function setupEventListeners() {
-            // Theme Toggle
-            document.getElementById('themeToggle').addEventListener('click', () => {
-                document.documentElement.classList.toggle('dark');
-                const isDark = document.documentElement.classList.contains('dark');
-                localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-            });
-
-            // Data Menu Dropdown
-            const dataMenuBtn = document.getElementById('dataMenuBtn');
-            const dataDropdown = document.getElementById('dataDropdown');
-            dataMenuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dataDropdown.classList.toggle('hidden');
-            });
-            document.addEventListener('click', () => {
-                dataDropdown.classList.add('hidden');
-            });
-
-            // Status Tabs
-            document.querySelectorAll('.status-tab').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.status-tab').forEach(b => {
-                        b.classList.remove('active', 'bg-indigo-600', 'text-white');
-                        b.classList.add('text-slate-600', 'dark:text-slate-300', 'hover:bg-slate-100', 'dark:hover:bg-slate-700');
-                    });
-                    btn.classList.add('active', 'bg-indigo-600', 'text-white');
-                    btn.classList.remove('text-slate-600', 'dark:text-slate-300', 'hover:bg-slate-100', 'dark:hover:bg-slate-700');
-                    
-                    currentFilterStatus = btn.dataset.status;
-                    renderDeadlines();
-                });
-            });
-
-            // Search, Priority & Sort
-            document.getElementById('searchInput').addEventListener('input', (e) => {
-                currentSearch = e.target.value.toLowerCase().trim();
-                renderDeadlines();
-            });
-
-            document.getElementById('priorityFilter').addEventListener('change', (e) => {
-                currentFilterPriority = e.target.value;
-                renderDeadlines();
-            });
-
-            document.getElementById('sortBy').addEventListener('change', (e) => {
-                currentSort = e.target.value;
-                renderDeadlines();
-            });
-
-            // Form Submit
-            document.getElementById('deadlineForm').addEventListener('submit', handleFormSubmit);
-
-            // Confirm Delete
-            document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-                if (taskToDeleteId) {
-                    deadlines = deadlines.filter(d => d.id !== taskToDeleteId);
-                    saveData();
-                    renderAll();
-                    closeDeleteModal();
-                    showToast('Đã xóa deadline thành công', 'info');
-                }
-            });
-        }
-
-        // ==================== HELPER FUNCTIONS ====================
-        function getDeadlineStatus(task) {
-            if (task.progress >= 100) return 'completed';
-            const now = new Date().getTime();
-            const due = new Date(task.dueDate).getTime();
-            const diffHours = (due - now) / (1000 * 60 * 60);
-
-            if (diffHours < 0) return 'overdue';
-            if (diffHours <= 48) return 'urgent';
-            return 'active';
-        }
-
-        function formatCountdown(dueDateStr, isCompleted) {
-            if (isCompleted) {
-                return { text: 'Đã hoàn thành', badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300', icon: 'check-circle-2' };
-            }
-
-            const now = new Date().getTime();
-            const due = new Date(dueDateStr).getTime();
-            const diffMs = due - now;
-            const absMs = Math.abs(diffMs);
-
-            const days = Math.floor(absMs / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((absMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((absMs % (1000 * 60 * 60)) / (1000 * 60));
-
-            let timeString = '';
-            if (days > 0) timeString += `${days} ngày `;
-            if (hours > 0 || days > 0) timeString += `${hours} giờ`;
-            if (days === 0 && hours === 0) timeString = `${minutes} phút`;
-
-            if (diffMs < 0) {
-                return {
-                    text: `Quá hạn ${timeString.trim()}`,
-                    badgeClass: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30',
-                    icon: 'alert-circle'
-                };
-            }
-
-            const diffHours = diffMs / (1000 * 60 * 60);
-            if (diffHours <= 48) {
-                return {
-                    text: `Còn ${timeString.trim()}`,
-                    badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30',
-                    icon: 'flame'
-                };
-            }
-
-            return {
-                text: `Còn ${timeString.trim()}`,
-                badgeClass: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 border border-sky-200/70 dark:border-sky-500/20',
-                icon: 'clock'
-            };
-        }
-
-        function formatDateTimeDisplay(dueDateStr) {
-            const d = new Date(dueDateStr);
-            return d.toLocaleString('vi-VN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        }
-
-        function getPriorityInfo(priority) {
-            switch (priority) {
-                case 'high':
-                    return { label: 'Cao', weight: 3, class: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20' };
-                case 'medium':
-                    return { label: 'Trung bình', weight: 2, class: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' };
-                default:
-                    return { label: 'Thấp', weight: 1, class: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600' };
-            }
-        }
-
-        // ==================== RENDERING ====================
-        function renderAll() {
-            updateStats();
-            renderDeadlines();
-        }
-
-        function updateStats() {
-            let active = 0;
-            let urgent = 0;
-            let overdue = 0;
-            let completed = 0;
-
-            deadlines.forEach(task => {
-                const status = getDeadlineStatus(task);
-                if (status === 'completed') completed++;
-                else if (status === 'overdue') overdue++;
-                else if (status === 'urgent') {
-                    urgent++;
-                    active++;
-                } else {
-                    active++;
-                }
-            });
-
-            const total = deadlines.length;
-            const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-            document.getElementById('statActive').innerText = active;
-            document.getElementById('statUrgent').innerText = urgent;
-            document.getElementById('statOverdue').innerText = overdue;
-            document.getElementById('statCompletion').innerText = `${completionRate}%`;
-            document.getElementById('statCompletedCount').innerText = `(${completed}/${total})`;
-        }
-
-        function renderDeadlines() {
-            const container = document.getElementById('deadlinesContainer');
-            const emptyState = document.getElementById('emptyState');
-
-            // 1. Filter
-            let filtered = deadlines.filter(task => {
-                const status = getDeadlineStatus(task);
-                
-                // Lọc theo tab trạng thái
-                if (currentFilterStatus !== 'all') {
-                    if (currentFilterStatus === 'active') {
-                        if (status !== 'active' && status !== 'urgent') return false;
-                    } else if (status !== currentFilterStatus) {
-                        return false;
-                    }
-                }
-
-                // Lọc theo ưu tiên
-                if (currentFilterPriority !== 'all' && task.priority !== currentFilterPriority) {
-                    return false;
-                }
-
-                // Lọc theo tìm kiếm
-                if (currentSearch) {
-                    const matchTitle = task.title.toLowerCase().includes(currentSearch);
-                    const matchCat = (task.category || '').toLowerCase().includes(currentSearch);
-                    const matchDesc = (task.description || '').toLowerCase().includes(currentSearch);
-                    if (!matchTitle && !matchCat && !matchDesc) return false;
-                }
-
-                return true;
-            });
-
-            // 2. Sort
-            filtered.sort((a, b) => {
-                // Luôn đẩy task đã hoàn thành xuống cuối khi ở tab "Tất cả"
-                if (currentFilterStatus === 'all') {
-                    const aDone = a.progress >= 100 ? 1 : 0;
-                    const bDone = b.progress >= 100 ? 1 : 0;
-                    if (aDone !== bDone) return aDone - bDone;
-                }
-
-                if (currentSort === 'dueDateAsc') {
-                    return new Date(a.dueDate) - new Date(b.dueDate);
-                } else if (currentSort === 'dueDateDesc') {
-                    return new Date(b.dueDate) - new Date(a.dueDate);
-                } else if (currentSort === 'priorityDesc') {
-                    return getPriorityInfo(b.priority).weight - getPriorityInfo(a.priority).weight;
-                } else if (currentSort === 'progressAsc') {
-                    return a.progress - b.progress;
-                }
-                return 0;
-            });
-
-            // 3. Render HTML
-            if (filtered.length === 0) {
-                container.innerHTML = '';
-                container.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                lucide.createIcons();
-                return;
-            }
-
-            container.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-
-            container.innerHTML = filtered.map(task => {
-                const isCompleted = task.progress >= 100;
-                const status = getDeadlineStatus(task);
-                const countdown = formatCountdown(task.dueDate, isCompleted);
-                const priority = getPriorityInfo(task.priority);
-
-                // Màu viền card dựa trên trạng thái
-                let cardBorderClass = 'border-slate-200/90 dark:border-slate-700/80';
-                if (!isCompleted) {
-                    if (status === 'overdue') cardBorderClass = 'border-rose-300 dark:border-rose-500/40 ring-1 ring-rose-500/10';
-                    else if (status === 'urgent') cardBorderClass = 'border-amber-300 dark:border-amber-500/40';
-                }
-
-                // Màu thanh tiến độ
-                let progressBarColor = 'bg-indigo-600 dark:bg-indigo-500';
-                if (isCompleted) progressBarColor = 'bg-emerald-500';
-                else if (status === 'overdue') progressBarColor = 'bg-rose-500';
-                else if (status === 'urgent') progressBarColor = 'bg-amber-500';
-
-                return `
-                <div class="bg-white dark:bg-slate-800 rounded-2xl border ${cardBorderClass} p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 ${isCompleted ? 'opacity-80' : ''}">
-                    <!-- Top Header: Category, Priority & Actions -->
-                    <div class="space-y-3">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="flex flex-wrap items-center gap-1.5">
-                                <span class="px-2.5 py-0.5 rounded-lg text-xs font-medium border ${priority.class}">
-                                    ${priority.label}
-                                </span>
-                                ${task.category ? `
-                                <span class="px-2.5 py-0.5 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
-                                    #${escapeHTML(task.category)}
-                                </span>` : ''}
-                            </div>
-
-                            <!-- Edit / Delete / Quick Complete -->
-                            <div class="flex items-center gap-1 shrink-0">
-                                <button onclick="toggleComplete('${task.id}')" title="${isCompleted ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành 100%'}" 
-                                    class="p-1.5 rounded-lg transition-colors ${isCompleted ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-700'}">
-                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="openModal('${task.id}')" title="Chỉnh sửa" 
-                                    class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="promptDelete('${task.id}')" title="Xóa" 
-                                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Title & Description -->
-                        <div>
-                            <h3 class="font-bold text-base text-slate-900 dark:text-white leading-snug ${isCompleted ? 'line-through text-slate-500 dark:text-slate-400' : ''}">
-                                ${escapeHTML(task.title)}
-                            </h3>
-                            ${task.description ? `
-                            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                                ${escapeHTML(task.description)}
-                            </p>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- Middle & Bottom: Countdown + Progress Slider -->
-                    <div class="space-y-3.5 pt-2 border-t border-slate-100 dark:border-slate-700/70">
-                        <!-- Due Date & Countdown Badge -->
-                        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                                <span>${formatDateTimeDisplay(task.dueDate)}</span>
-                            </div>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold ${countdown.badgeClass}">
-                                <i data-lucide="${countdown.icon}" class="w-3.5 h-3.5"></i>
-                                ${countdown.text}
-                            </span>
-                        </div>
-
-                        <!-- Progress Control -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="font-medium text-slate-600 dark:text-slate-300">Tiến độ thực hiện</span>
-                                <div class="flex items-center gap-1.5">
-                                    <button onclick="stepProgress('${task.id}', -10)" class="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300" title="Giảm 10%">-</button>
-                                    <span class="font-bold w-9 text-center ${isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}">${task.progress}%</span>
-                                    <button onclick="stepProgress('${task.id}', 10)" class="w-5 h-5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300" title="Tăng 10%">+</button>
-                                </div>
-                            </div>
-
-                            <!-- Interactive Slider -->
-                            <div class="relative flex items-center">
-                                <input type="range" min="0" max="100" step="5" value="${task.progress}" 
-                                    onchange="updateProgress('${task.id}', this.value)"
-                                    oninput="this.nextElementSibling.style.width = this.value + '%'"
-                                    class="w-full z-10 opacity-0 cursor-pointer h-5 absolute inset-0">
-                                <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div class="h-full ${progressBarColor} transition-all duration-200 rounded-full" style="width: ${task.progress}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        // ==================== CRUD & PROGRESS ACTIONS ====================
-        function updateProgress(id, newValue) {
-            const val = Math.max(0, Math.min(100, parseInt(newValue, 10)));
-            const task = deadlines.find(d => d.id === id);
-            if (!task) return;
-
-            const wasCompleted = task.progress === 100;
-            task.progress = val;
-            saveData();
-            renderAll();
-
-            if (!wasCompleted && val === 100) {
-                showToast(`🎉 Chúc mừng! Bạn đã hoàn thành "${task.title}"`, 'success');
-            }
-        }
-
-        function stepProgress(id, delta) {
-            const task = deadlines.find(d => d.id === id);
-            if (!task) return;
-            updateProgress(id, task.progress + delta);
-        }
-
-        function toggleComplete(id) {
-            const task = deadlines.find(d => d.id === id);
-            if (!task) return;
-            if (task.progress >= 100) {
-                updateProgress(id, 50);
-                showToast('Đã chuyển trạng thái sang đang thực hiện', 'info');
-            } else {
-                updateProgress(id, 100);
-            }
-        }
-
-        // ==================== MODAL HANDLING ====================
-        function openModal(editId = null) {
-            const modal = document.getElementById('deadlineModal');
-            const form = document.getElementById('deadlineForm');
-            const titleEl = document.getElementById('modalTitle');
-            
-            form.reset();
-
-            if (editId) {
-                const task = deadlines.find(d => d.id === editId);
-                if (!task) return;
-                titleEl.innerText = 'Chỉnh Sửa Deadline';
-                document.getElementById('taskId').value = task.id;
-                document.getElementById('taskTitle').value = task.title;
-                document.getElementById('taskDesc').value = task.description || '';
-                document.getElementById('taskDueDate').value = task.dueDate;
-                document.getElementById('taskPriority').value = task.priority;
-                document.getElementById('taskCategory').value = task.category || '';
-                document.getElementById('taskProgress').value = task.progress;
-                document.getElementById('modalProgressLabel').innerText = `${task.progress}%`;
-            } else {
-                titleEl.innerText = 'Thêm Deadline Mới';
-                document.getElementById('taskId').value = '';
-                document.getElementById('modalProgressLabel').innerText = '0%';
-                
-                // Mặc định chọn ngày mai lúc 17:00
-                const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                tomorrow.setHours(17, 0, 0, 0);
-                const tzOffset = tomorrow.getTimezoneOffset() * 60000;
-                document.getElementById('taskDueDate').value = new Date(tomorrow - tzOffset).toISOString().slice(0, 16);
-            }
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.getElementById('taskTitle').focus();
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('deadlineModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function handleFormSubmit(e) {
-            e.preventDefault();
-            const id = document.getElementById('taskId').value;
-            const title = document.getElementById('taskTitle').value.trim();
-            const description = document.getElementById('taskDesc').value.trim();
-            const dueDate = document.getElementById('taskDueDate').value;
-            const priority = document.getElementById('taskPriority').value;
-            const category = document.getElementById('taskCategory').value.trim();
-            const progress = parseInt(document.getElementById('taskProgress').value, 10);
-
-            if (!title || !dueDate) return;
-
-            if (id) {
-                // Cập nhật
-                const index = deadlines.findIndex(d => d.id === id);
-                if (index !== -1) {
-                    deadlines[index] = { ...deadlines[index], title, description, dueDate, priority, category, progress };
-                    showToast('Đã cập nhật thông tin deadline!', 'success');
-                }
-            } else {
-                // Tạo mới
-                const newTask = {
-                    id: 'task-' + Date.now(),
-                    title,
-                    description,
-                    dueDate,
-                    priority,
-                    category,
-                    progress,
-                    createdAt: Date.now()
-                };
-                deadlines.unshift(newTask);
-                showToast('Đã thêm deadline mới!', 'success');
-            }
-
-            saveData();
-            renderAll();
-            closeModal();
-        }
-
-        function promptDelete(id) {
-            const task = deadlines.find(d => d.id === id);
-            if (!task) return;
-            taskToDeleteId = id;
-            document.getElementById('deleteTaskName').innerText = `"${task.title}"`;
-            const modal = document.getElementById('deleteModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeDeleteModal() {
-            taskToDeleteId = null;
-            const modal = document.getElementById('deleteModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        // ==================== EXPORT / IMPORT / RESET ====================
-        function exportData() {
-            const dataStr = JSON.stringify(deadlines, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const dateStr = new Date().toISOString().slice(0, 10);
-            a.href = url;
-            a.download = `taskflow-deadlines-${dateStr}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('Đã xuất file sao lưu JSON!', 'success');
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (Array.isArray(imported)) {
-                        deadlines = imported;
-                        saveData();
-                        renderAll();
-                        showToast(`Đã nhập thành công ${imported.length} deadline!`, 'success');
-                    } else {
-                        showToast('Định dạng file JSON không hợp lệ!', 'error');
-                    }
-                } catch (err) {
-                    showToast('Lỗi khi đọc file JSON!', 'error');
-                }
-                event.target.value = '';
-            };
-            reader.readAsText(file);
-        }
-
-        function resetSampleData() {
-            deadlines = getSampleData();
-            saveData();
-            renderAll();
-            showToast('Đã khôi phục dữ liệu mẫu ban đầu!', 'info');
-        }
-
-        // ==================== UTILITIES ====================
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g, tag => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                "'": '&#39;',
-                '"': '&quot;'
-            }[tag]));
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            let bgClass = 'bg-slate-800 text-white dark:bg-slate-700';
-            if (type === 'success') bgClass = 'bg-emerald-600 text-white';
-            if (type === 'error') bgClass = 'bg-rose-600 text-white';
-
-            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
-            toast.innerHTML = `<span>${message}</span>`;
-            
-            container.appendChild(toast);
-            
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            });
-
-            setTimeout(() => {
-                toast.classList.add('translate-y-2', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-    </script>
+    <div id="deadlineList" class="deadline-list"></div>
+  </div>
+
+  <script>
+    const SHARED_KEY = 'taskflow_deadlines_shared_v1';
+    const PERSONAL_KEY = 'taskflow_deadlines_personal_v1';
+    const THEME_KEY = 'taskflow_theme_v1';
+
+    let currentTab = 'all';
+
+    function loadList(key) {
+      try {
+        return JSON.parse(localStorage.getItem(key)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveList(key, list) {
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+
+    function getStatusClass(dueStr, progress) {
+      if (progress >= 100) return '';
+      const diffHours = (new Date(dueStr).getTime() - Date.now()) / (1000 * 60 * 60);
+      if (diffHours < 0) return 'overdue';
+      if (diffHours <= 48) return 'soon';
+      return '';
+    }
+
+    function formatRemaining(dueStr, progress) {
+      if (progress >= 100) return 'Đã hoàn thành';
+      const diffMs = new Date(dueStr).getTime() - Date.now();
+      const absHours = Math.round(Math.abs(diffMs) / (1000 * 60 * 60));
+      const days = Math.floor(absHours / 24);
+      const hours = absHours % 24;
+      const text = days > 0 ? `${days} ngày ${hours} giờ` : `${hours} giờ`;
+      return diffMs < 0 ? `Quá hạn ${text}` : `Còn ${text}`;
+    }
+
+    function render() {
+      const shared = loadList(SHARED_KEY).map(x => ({ ...x, scope: 'shared' }));
+      const personal = loadList(PERSONAL_KEY).map(x => ({ ...x, scope: 'personal' }));
+
+      let items = [];
+      if (currentTab === 'shared') items = shared;
+      else if (currentTab === 'personal') items = personal;
+      else items = [...shared, ...personal];
+
+      items.sort((a, b) => new Date(a.due) - new Date(b.due));
+
+      const container = document.getElementById('deadlineList');
+      if (!items.length) {
+        container.innerHTML = '<div class="card meta">Chưa có deadline nào trong mục này.</div>';
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        const statusClass = getStatusClass(item.due, item.progress);
+        const scopeLabel = item.scope === 'shared' ? 'CHUNG' : 'RIÊNG';
+        return `
+          <div class="item ${statusClass}">
+            <div class="item-top">
+              <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <div class="meta">Hạn: ${new Date(item.due).toLocaleString('vi-VN')} • ${formatRemaining(item.due, item.progress)}</div>
+              </div>
+              <div class="badges">
+                <span class="badge">${scopeLabel}</span>
+                <span class="badge">Ưu tiên: ${escapeHtml(item.priority)}</span>
+              </div>
+            </div>
+            <div class="progress-row">
+              <input type="range" min="0" max="100" value="${item.progress}" onchange="updateProgress('${item.scope}', '${item.id}', this.value)" />
+              <strong>${item.progress}%</strong>
+              <div class="actions">
+                <button onclick="updateProgress('${item.scope}', '${item.id}', 100)">Hoàn tất</button>
+                <button class="danger" onclick="deleteItem('${item.scope}', '${item.id}')">Xoá</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    window.updateProgress = function(scope, id, val) {
+      const key = scope === 'shared' ? SHARED_KEY : PERSONAL_KEY;
+      const list = loadList(key).map(item =>
+        item.id === id ? { ...item, progress: Number(val) } : item
+      );
+      saveList(key, list);
+      render();
+    };
+
+    window.deleteItem = function(scope, id) {
+      const key = scope === 'shared' ? SHARED_KEY : PERSONAL_KEY;
+      const list = loadList(key).filter(item => item.id !== id);
+      saveList(key, list);
+      render();
+    };
+
+    document.getElementById('deadlineForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const title = document.getElementById('titleInput').value.trim();
+      const due = document.getElementById('dueInput').value;
+      const scope = document.getElementById('scopeSelect').value;
+      const priority = document.getElementById('prioritySelect').value;
+      if (!title || !due) return;
+
+      const key = scope === 'shared' ? SHARED_KEY : PERSONAL_KEY;
+      const list = loadList(key);
+      list.push({
+        id: String(Date.now()) + '_' + Math.random().toString(36).slice(2, 6),
+        title,
+        due,
+        priority,
+        progress: 0
+      });
+      saveList(key, list);
+      e.target.reset();
+      document.getElementById('scopeSelect').value = scope;
+      render();
+    });
+
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        render();
+      });
+    });
+
+    document.getElementById('exportSharedBtn').addEventListener('click', () => {
+      const data = loadList(SHARED_KEY);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'deadlines-chung.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    const fileInput = document.getElementById('importSharedFile');
+    document.getElementById('importSharedBtn').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        if (!Array.isArray(parsed)) throw new Error('Sai định dạng');
+        saveList(SHARED_KEY, parsed);
+        render();
+        alert('Đã cập nhật danh sách Chung thành công!');
+      } catch {
+        alert('File .json không hợp lệ.');
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    const themeBtn = document.getElementById('themeBtn');
+    if (localStorage.getItem(THEME_KEY) === 'dark') document.body.classList.add('dark');
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem(THEME_KEY, document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    render();
+  </script>
 </body>
 </html>
